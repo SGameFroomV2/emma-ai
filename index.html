@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emma AI - SGame Froom</title>
+    <!-- Tailwind CSS para el diseño ágil -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Iconos Lucide para una UI estilo Discord/Premium -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #1e1b4b;
+        }
+        /* Estilo Glassmorphism Premium Claro */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(219, 39, 119, 0.15);
+        }
+        .glass-sidebar {
+            background: rgba(255, 255, 255, 0.9);
+            border-right: 1px solid rgba(139, 92, 246, 0.15);
+        }
+        /* Barras de desplazamiento personalizadas */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        /* Animación de pulso para carga e indicadores de escritura */
+        .dot-pulse {
+            animation: pulse 1.4s infinite ease-in-out both;
+        }
+        .dot-pulse:nth-child(2) { animation-delay: 0.2s; }
+        .dot-pulse:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes pulse {
+            0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#1e1b4b',   /* Indigo profundo */
+                            purple: '#8b5cf6', /* Morado vibrante */
+                            pink: '#ec4899',   /* Rosado brillante */
+                            light: '#fdf2f8',  /* Fondo rosado tenue */
+                            accent: '#a78bfa'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="h-screen overflow-hidden flex flex-col">
+
+    <!-- CONTENEDOR DE ALERTAS FLOTANTES -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3"></div>
+
+    <!-- PANTALLA DE AUTENTICACIÓN (LOGIN / REGISTRO) -->
+    <div id="auth-screen" class="fixed inset-0 z-40 flex items-center justify-center bg-gradient-to-tr from-brand-light via-white to-purple-50 p-4 overflow-y-auto">
+        <div class="w-full max-w-md glass-card rounded-2xl p-8 shadow-xl border border-brand-pink/20 transition-all duration-300">
+            <!-- Header Auth -->
+            <div class="text-center mb-8">
+                <div class="inline-flex p-3 rounded-2xl bg-gradient-to-tr from-brand-purple to-brand-pink text-white mb-3 shadow-lg">
+                    <i data-lucide="bot" class="w-8 h-8"></i>
+                </div>
+                <h1 class="text-3xl font-bold tracking-tight text-brand-dark">Emma AI</h1>
+                <p class="text-sm text-slate-500 mt-1">SGame Froom Hub</p>
+            </div>
+
+            <!-- Formulario de Login -->
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Correo Electrónico</label>
+                    <div class="relative">
+                        <i data-lucide="mail" class="absolute left-3 top-3 w-5 h-5 text-slate-400"></i>
+                        <input type="email" id="login-email" required class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-purple bg-white/50 text-sm" placeholder="tu@correo.com">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Contraseña</label>
+                    <div class="relative">
+                        <i data-lucide="lock" class="absolute left-3 top-3 w-5 h-5 text-slate-400"></i>
+                        <input type="password" id="login-password" required class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-purple bg-white/50 text-sm" placeholder="••••••••">
+                    </div>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                    <label class="flex items-center gap-2 cursor-pointer text-slate-600">
+                        <input type="checkbox" class="rounded border-slate-300 text-brand-purple focus:ring-brand-purple"> Recordarme
+                    </label>
+                    <a href="#" id="btn-recover" class="font-medium text-brand-purple hover:underline">¿Olvidaste tu contraseña?</a>
+                </div>
+                <button type="submit" class="w-full py-3 bg-gradient-to-r from-brand-purple to-brand-pink hover:opacity-90 text-white font-medium rounded-xl shadow-md transform active:scale-[0.98] transition-all text-sm">
+                    Iniciar Sesión
+                </button>
+            </form>
+
+            <!-- Formulario de Registro (Oculto inicialmente) -->
+            <form id="register-form" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Nombre de Usuario</label>
+                    <div class="relative">
+                        <i data-lucide="user" class="absolute left-3 top-3 w-5 h-5 text-slate-400"></i>
+                        <input type="text" id="reg-username" required class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-purple bg-white/50 text-sm" placeholder="ej. ivan_dev">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Correo Electrónico</label>
+                    <div class="relative">
+                        <i data-lucide="mail" class="absolute left-3 top-3 w-5 h-5 text-slate-400"></i>
+                        <input type="email" id="reg-email" required class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-purple bg-white/50 text-sm" placeholder="tu@correo.com">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Contraseña</label>
+                    <div class="relative">
+                        <i data-lucide="lock" class="absolute left-3 top-3 w-5 h-5 text-slate-400"></i>
+                        <input type="password" id="reg-password" required class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-purple bg-white/50 text-sm" placeholder="Mínimo 6 caracteres">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Confirmar Contraseña</label>
+                    <div class="relative">
+                        <i data-lucide="lock" class="absolute left-3 top-3 w-5 h-5 text-slate-400"></i>
+                        <input type="password" id="reg-password-confirm" required class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-purple bg-white/50 text-sm" placeholder="Repite la contraseña">
+                    </div>
+                </div>
+                <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-600">
+                    <input type="checkbox" required class="rounded border-slate-300 text-brand-purple focus:ring-brand-purple"> Acepto los términos de servicio
+                </label>
+                <button type="submit" class="w-full py-3 bg-gradient-to-r from-brand-purple to-brand-pink hover:opacity-90 text-white font-medium rounded-xl shadow-md transform active:scale-[0.98] transition-all text-sm">
+                    Crear Cuenta Cuenta
+                </button>
+            </form>
+
+            <!-- Separador -->
+            <div class="relative my-6 text-center">
+                <hr class="border-slate-200">
+                <span class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-3 text-xs text-slate-400 font-medium">O CONTINÚAR CON</span>
+            </div>
+
+            <!-- Accesos Alternativos -->
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <button id="btn-guest" class="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all text-xs font-medium text-slate-700 bg-white">
+                    <i data-lucide="user-minus" class="w-4 h-4 text-slate-500"></i> Invitado
+                </button>
+                <button class="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all text-xs font-medium text-slate-400 bg-slate-50/50 cursor-not-allowed" disabled>
+                    <i data-lucide="chrome" class="w-4 h-4"></i> Discord <span class="text-[9px] bg-slate-200 text-slate-600 px-1 rounded">Prox</span>
+                </button>
+            </div>
+
+            <!-- Toggle Auth Mode -->
+            <div class="text-center text-xs text-slate-600">
+                <span id="auth-toggle-text">¿No tienes cuenta?</span>
+                <button id="btn-toggle-auth" class="font-semibold text-brand-purple hover:underline ml-1">Regístrate</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ENTORNO COMPLETO DASHBOARD (PANTALLA PRINCIPAL) -->
+    <div id="main-dashboard" class="flex-1 flex overflow-hidden hidden">
+        
+        <!-- SIDEBAR (MENÚ LATERAL RESPONSIVO) -->
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-72 glass-sidebar flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-300 lg:relative">
+            <!-- Sidebar Header -->
+            <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-purple to-brand-pink flex items-center justify-center text-white shadow-md shadow-brand-purple/20">
+                        <i data-lucide="bot" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-slate-800 leading-none text-base">Emma AI</h2>
+                        <span class="text-[10px] text-brand-pink font-semibold uppercase tracking-wider">SGame Froom</span>
+                    </div>
+                </div>
+                <button class="lg:hidden p-1 text-slate-500 hover:bg-slate-100 rounded" onclick="toggleSidebar()">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Navegación Principal -->
+            <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+                <button onclick="switchTab('tab-chat')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all bg-gradient-to-r from-brand-purple/10 to-brand-pink/10 text-brand-purple" id="nav-tab-chat">
+                    <i data-lucide="message-square" class="w-4 h-4"></i> Sala de Chat
+                </button>
+                <button onclick="switchTab('tab-profile')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all" id="nav-tab-profile">
+                    <i data-lucide="user-cog" class="w-4 h-4"></i> Mi Perfil
+                </button>
+                <button onclick="switchTab('tab-admin')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all hidden" id="nav-tab-admin">
+                    <i data-lucide="shield" class="w-4 h-4"></i> Panel de Admin
+                </button>
+
+                <!-- Sección de Chats Recientes -->
+                <div class="pt-6">
+                    <div class="flex items-center justify-between px-3 mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+                        <span>Conversaciones</span>
+                        <button onclick="startNewChat()" class="hover:text-brand-purple transition-all" title="Nuevo Chat">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <div id="recent-chats-list" class="space-y-1 max-h-48 overflow-y-auto pr-1">
+                        <!-- Generados dinámicamente -->
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Footer Sidebar con Datos de Sesión -->
+            <div class="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <div class="flex items-center gap-2 overflow-hidden">
+                    <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-700 font-bold text-xs shrink-0" id="user-avatar">U</div>
+                    <div class="overflow-hidden">
+                        <p class="text-xs font-semibold text-slate-800 truncate leading-tight" id="user-display-name">Usuario</p>
+                        <span class="text-[9px] text-emerald-600 bg-emerald-50 px-1 rounded font-medium inline-block mt-0.5">Plan Free Activo</span>
+                    </div>
+                </div>
+                <button id="btn-logout" class="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-all" title="Cerrar Sesión">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- ESPACIO DE CONTENIDO PRINCIPAL -->
+        <main class="flex-1 flex flex-col overflow-hidden relative bg-slate-50/60">
+            <!-- Barra superior del Dashboard móvil y de estado -->
+            <header class="h-14 border-b border-slate-100 bg-white/80 backdrop-blur-md px-4 flex items-center justify-between lg:justify-end">
+                <button class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg" onclick="toggleSidebar()">
+                    <i data-lucide="menu" class="w-5 h-5"></i>
+                </button>
+                <div class="flex items-center gap-4 text-xs">
+                    <!-- Contador de límites de uso diario real -->
+                    <div class="bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-brand-pink"></span>
+                        <span class="font-medium text-slate-600">Mensajes Hoy: <strong id="limit-counter" class="text-slate-800">0/20</strong></span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- CONTENEDOR MODULAR DE VISTAS (TABS) -->
+            <div class="flex-1 overflow-hidden relative">
+                
+                <!-- TAB 1: INTERFAZ DE CONVERSACIÓN IA -->
+                <section id="tab-chat" class="absolute inset-0 flex flex-col bg-white">
+                    <!-- Caja de mensajes -->
+                    <div id="chat-messages-box" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/30">
+                        <!-- El script inyectará aquí los bloques de conversación estructurada -->
+                    </div>
+
+                    <!-- Indicador visual de estado de escritura -->
+                    <div id="typing-indicator" class="px-6 py-2 text-xs text-slate-400 items-center gap-2 hidden bg-slate-50/30">
+                        <span class="italic">Emma está formulando una respuesta</span>
+                        <div class="flex gap-1">
+                            <span class="w-1 h-1 rounded-full bg-slate-400 dot-pulse"></span>
+                            <span class="w-1 h-1 rounded-full bg-slate-400 dot-pulse"></span>
+                            <span class="w-1 h-1 rounded-full bg-slate-400 dot-pulse"></span>
+                        </div>
+                    </div>
+
+                    <!-- Input / Consola inferior de redacción -->
+                    <div class="p-4 border-t border-slate-100 bg-white">
+                        <form id="chat-input-form" class="max-w-4xl mx-auto flex gap-2">
+                            <div class="relative flex-1">
+                                <span class="absolute left-3 top-3 text-xs font-mono font-bold text-brand-purple bg-purple-50 px-1.5 py-0.5 rounded">/ask</span>
+                                <input type="text" id="chat-input" required class="w-full pl-16 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-purple bg-slate-50/50 text-sm" placeholder="Ask a question to the AI...">
+                            </div>
+                            <button type="submit" class="p-3 bg-gradient-to-tr from-brand-purple to-brand-pink text-white rounded-xl shadow-md hover:opacity-95 transition-all">
+                                <i data-lucide="send" class="w-5 h-5"></i>
+                            </button>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- TAB 2: CONFIGURACIÓN Y PERFIL DE USUARIO -->
+                <section id="tab-profile" class="absolute inset-0 overflow-y-auto p-6 hidden">
+                    <div class="max-w-2xl mx-auto space-y-6">
+                        <h3 class="text-xl font-bold text-slate-800">Ajustes de Perfil</h3>
+                        
+                        <!-- Formulario de actualización de datos básicos -->
+                        <div class="glass-card rounded-2xl p-6 shadow-sm space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-500 mb-1">Nombre Público</label>
+                                    <input type="text" id="profile-name" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-brand-purple">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-500 mb-1">Correo Electrónico</label>
+                                    <input type="email" id="profile-email" disabled class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-400 cursor-not-allowed">
+                                </div>
+                            </div>
+                            <div class="flex justify-end gap-2 pt-2">
+                                <button type="button" onclick="resetProfileForm()" class="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-medium hover:bg-slate-50 transition-all">Reset</button>
+                                <button type="button" onclick="saveProfileChanges()" class="px-4 py-2 bg-gradient-to-r from-brand-purple to-brand-pink text-white rounded-xl text-xs font-medium hover:opacity-90 shadow-sm transition-all">Save Changes</button>
+                            </div>
+                        </div>
+
+                        <!-- Vinculaciones e Integraciones Estáticas -->
+                        <div class="glass-card rounded-2xl p-6 shadow-sm">
+                            <h4 class="text-sm font-bold text-slate-700 mb-3">Vinculaciones Externas</h4>
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between p-3 border border-slate-100 rounded-xl bg-slate-50/50">
+                                    <div class="flex items-center gap-3 text-xs font-medium text-slate-700"><i data-lucide="chrome" class="w-4 h-4 text-slate-500"></i> Google Account</div>
+                                    <span class="text-[10px] bg-slate-200 text-slate-600 font-semibold px-2 py-0.5 rounded-full">Próximamente</span>
+                                </div>
+                                <div class="flex items-center justify-between p-3 border border-slate-100 rounded-xl bg-slate-50/50">
+                                    <div class="flex items-center gap-3 text-xs font-medium text-slate-700"><i data-lucide="github" class="w-4 h-4 text-slate-500"></i> GitHub Profile</div>
+                                    <span class="text-[10px] bg-slate-200 text-slate-600 font-semibold px-2 py-0.5 rounded-full">Próximamente</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 3: PANEL ADMINISTRADOR COMPLETO -->
+                <section id="tab-admin" class="absolute inset-0 overflow-y-auto p-6 hidden">
+                    <div class="max-w-5xl mx-auto space-y-6">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i data-lucide="shield-check" class="text-brand-purple"></i> Panel Administrativo Central</h3>
+                            <span class="text-xs bg-purple-100 text-brand-purple font-bold px-3 py-1 rounded-full uppercase tracking-wider">Root Access</span>
+                        </div>
+
+                        <!-- Panel de Datos Técnicos de la API Externa Vinculada -->
+                        <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-6 shadow-xl border border-slate-800">
+                            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div>
+                                    <div class="flex items-center gap-2 text-xs font-mono text-brand-accent tracking-wider mb-1">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                                        API CONECTADA EXITOSAMENTE
+                                    </div>
+                                    <h4 class="text-lg font-bold tracking-tight">https://verba.ink/v/emmaai_5oi</h4>
+                                </div>
+                                <div class="grid grid-cols-2 gap-x-6 gap-y-1 font-mono text-[11px] text-slate-300 border-l border-white/10 pl-4">
+                                    <div><strong>Verb ID:</strong> c0ada96b15ce0677a9dddc95</div>
+                                    <div><strong>Model AI:</strong> m_free_a</div>
+                                    <div><strong>Created:</strong> May 28, 2026</div>
+                                    <div><strong>Last Active:</strong> May 29, 2026</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Métricas del Servidor -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase">Usuarios Totales</span>
+                                <p class="text-2xl font-bold text-slate-800 mt-1" id="stat-users">1</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase">Mensajes Procesados</span>
+                                <p class="text-2xl font-bold text-slate-800 mt-1" id="stat-chats">0</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase">Límites Diarios</span>
+                                <p class="text-2xl font-bold text-slate-800 mt-1" id="stat-limit">20</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase">Ubicación Clúster</span>
+                                <p class="text-xs font-bold text-brand-pink mt-2">Santo Domingo, RD</p>
+                            </div>
+                        </div>
+
+                        <!-- Configuración de Respuestas del Bot (Custom Strings) -->
+                        <div class="glass-card rounded-2xl p-6 shadow-sm space-y-4">
+                            <h4 class="text-sm font-bold text-slate-700 flex items-center gap-2"><i data-lucide="sliders" class="w-4 h-4"></i> Respuestas Personalizadas del Sistema</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-500 mb-1">Mensaje de Bienvenida</label>
+                                    <input type="text" id="cfg-msg-welcome" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-brand-purple">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-500 mb-1">Mensaje de Límite Superado (Rate Limit)</label>
+                                    <input type="text" id="cfg-msg-limit" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-brand-purple">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-500 mb-1">Límitación Diaria Global (Mensajes)</label>
+                                    <input type="number" id="cfg-msg-limit-num" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-brand-purple">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-500 mb-1">Mensaje de Error Crítico</label>
+                                    <input type="text" id="cfg-msg-error" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-brand-purple">
+                                </div>
+                            </div>
+                            <div class="flex justify-end gap-2 pt-2">
+                                <button onclick="resetAdminStrings()" class="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-medium hover:bg-slate-50">Reset de Fábrica</button>
+                                <button onclick="saveAdminStrings()" class="px-4 py-2 bg-gradient-to-r from-brand-purple to-brand-pink text-white rounded-xl text-xs font-medium hover:opacity-90 shadow-sm">Save Changes</button>
+                            </div>
+                        </div>
+
+                        <!-- Control y Modulación de Usuarios del Ecosistema -->
+                        <div class="glass-card rounded-2xl p-6 shadow-sm">
+                            <h4 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2"><i data-lucide="users" class="w-4 h-4"></i> Directorio de Cuentas del Ecosistema</h4>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="border-b border-slate-200 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                                            <th class="pb-3 pl-2">UID / Email</th>
+                                            <th class="pb-3">Nombre</th>
+                                            <th class="pb-3">Uso Diario</th>
+                                            <th class="pb-3 text-right pr-2">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-users-rows" class="text-xs divide-y divide-slate-100 text-slate-600">
+                                        <!-- Filas mapeadas dinámicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+            </div>
+
+            <!-- FOOTER OFICIAL -->
+            <footer class="h-10 border-t border-slate-100 bg-white/80 px-4 flex items-center justify-between text-[10px] text-slate-400 font-medium shrink-0">
+                <div>&copy; 2026 Emma AI. Desarrollado por <strong>SGame Froom</strong>.</div>
+                <div class="flex items-center gap-3">
+                    <span>Colaboración: Code Froom</span>
+                    <span>&bull;</span>
+                    <span>SP Security Bot</span>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <!-- PANTALLA CRÍTICA DE SUSPENSIÓN DE CUENTAS -->
+    <div id="suspended-screen" class="fixed inset-0 z-50 bg-slate-900 text-white flex items-center justify-center p-4 hidden">
+        <div class="w-full max-w-md text-center space-y-6">
+            <div class="inline-flex p-4 rounded-full bg-red-500/10 text-red-500 animate-bounce">
+                <i data-lucide="alert-triangle" class="w-12 h-12"></i>
+            </div>
+            <h1 class="text-3xl font-black tracking-tight text-red-500">CUENTA SUSPENDIDA</h1>
+            <p class="text-sm text-slate-400">Tu acceso a los módulos de Emma AI ha sido restringido por violaciones de los términos del servicio o políticas internas del administrador.</p>
+            <div class="bg-slate-800/80 rounded-2xl p-5 border border-slate-700 text-left space-y-2">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Motivo de la penalización:</p>
+                <p class="text-sm font-medium text-white" id="suspension-reason">Abuso de llamadas concurrentes al sistema.</p>
+                <hr class="border-slate-700 my-2">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Tiempo de penalización restante:</p>
+                <p class="text-base font-mono font-bold text-brand-pink" id="suspension-countdown">00:00:00</p>
+            </div>
+            <button onclick="location.reload()" class="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-bold tracking-wider rounded-xl transition-all">REINTENTAR ACCESO</button>
+        </div>
+    </div>
+
+    <!-- DECLARACIONES DEL MOTOR Y SCRIPTS DE FIREBASE -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithEmailAndPassword, 
+            createUserWithEmailAndPassword, 
+            signInAnonymously, 
+            signOut, 
+            onAuthStateChanged,
+            updateProfile
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // Configuración oficial provista por el cliente
+        const firebaseConfig = {
+            apiKey: "AIzaSyBZJcvhr5s6vP8CKKCDQCG1BYaavwscQ2A",
+            authDomain: "emmaai-fbf71.firebaseapp.com",
+            projectId: "emmaai-fbf71",
+            storageBucket: "emmaai-fbf71.firebasestorage.app",
+            messagingSenderId: "1053271521247",
+            appId: "1:1053271521247:web:3f0199982ce63b1f98f66a",
+            measurementId: "G-919NN2MTLS"
+        };
+
+        // Inicializaciones de Ecosistema
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // MOTOR LOCAL DE DATOS (Simulador Persistente de Base de Datos para Control de Límites, Mensajes y Administración)
+        const AppDB = {
+            getStore() {
+                let data = localStorage.getItem('emma_ai_db');
+                if(!data) {
+                    data = {
+                        systemStrings: {
+                            welcome: "¡Hola! Soy Emma AI. ¿En qué puedo asistirte en tus despliegues hoy?",
+                            rateLimit: "Rate Limit Messages: Has alcanzado el límite diario del plan gratuito. Vuelve mañana o mejora tu plan.",
+                            error: "AI Response Error: Ocurrió un fallo de sincronización con el núcleo central.",
+                            globalLimit: 20
+                        },
+                        usersMeta: {}, // Registro por UID
+                        chats: {
+                            "default-chat": { id: "default-chat", title: "Soporte Inicial", messages: [] }
+                        },
+                        activeChat: "default-chat",
+                        totalGlobalMessages: 0
+                    };
+                    localStorage.setItem('emma_ai_db', JSON.stringify(data));
+                }
+                return JSON.parse(localStorage.getItem('emma_ai_db'));
+            },
+            saveStore(obj) {
+                localStorage.setItem('emma_ai_db', JSON.stringify(obj));
+            },
+            getUserMeta(uid) {
+                const store = this.getStore();
+                if(!store.usersMeta[uid]) {
+                    store.usersMeta[uid] = {
+                        uid: uid,
+                        name: "Desarrollador",
+                        messagesSentToday: 0,
+                        isSuspended: false,
+                        suspensionReason: "",
+                        suspensionUntil: 0,
+                        isAdmin: (uid === "zZ3E6S4zEuf68fKxT7sF2u8m1U83" || Object.keys(store.usersMeta).length === 0) // El primer usuario es asignado como Admin de manera automática
+                    };
+                    this.saveStore(store);
+                }
+                return store.usersMeta[uid];
+            },
+            updateUserMeta(uid, patch) {
+                const store = this.getStore();
+                store.usersMeta[uid] = { ...this.getUserMeta(uid), ...patch };
+                this.saveStore(store);
+            }
+        };
+
+        // Estado de sesión actual en memoria reactiva
+        let currentUser = null;
+        let authMode = "LOGIN"; 
+
+        // INICIALIZACIÓN DE ELEMENTOS GRÁFICOS Y COMPONENTES LUCIDE
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            initAuthListeners();
+            initChatListeners();
+            // Render de los hilos de conversación iniciales
+            renderRecentChats();
+        });
+
+        // TOAST NOTIFICATIONS SYSTEM
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-semibold shadow-lg border transition-all duration-300 transform translate-y-2 opacity-0`;
+            
+            if(type === 'success') {
+                toast.className += ' bg-emerald-50 text-emerald-700 border-emerald-200';
+            } else {
+                toast.className += ' bg-rose-50 text-rose-700 border-rose-200';
+            }
+            
+            toast.innerHTML = `<i data-lucide="${type === 'success' ? 'check-circle' : 'alert-circle'}" class="w-4 h-4"></i> <span>${message}</span>`;
+            container.appendChild(toast);
+            lucide.createIcons({attrs: {"data-lucide": true}, nameAttr: "data-lucide", node: toast});
+            
+            setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 10);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-[-4px]');
+                setTimeout(() => { toast.remove(); }, 300);
+            }, 4000);
+        }
+
+        // CONTROLADORES DE INTERFAZ DE AUTENTICACIÓN
+        function initAuthListeners() {
+            const btnToggleAuth = document.getElementById('btn-toggle-auth');
+            const loginForm = document.getElementById('login-form');
+            const registerForm = document.getElementById('register-form');
+            const authToggleText = document.getElementById('auth-toggle-text');
+
+            btnToggleAuth.addEventListener('click', () => {
+                if(authMode === "LOGIN") {
+                    authMode = "REGISTER";
+                    loginForm.classList.add('hidden');
+                    registerForm.classList.remove('hidden');
+                    authToggleText.innerText = "¿Ya tienes una cuenta?";
+                    btnToggleAuth.innerText = "Inicia Sesión";
+                } else {
+                    authMode = "LOGIN";
+                    registerForm.classList.add('hidden');
+                    loginForm.classList.remove('hidden');
+                    authToggleText.innerText = "¿No tienes cuenta?";
+                    btnToggleAuth.innerText = "Regístrate";
+                }
+            });
+
+            // Acción: Login Convencional por Correo
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('login-email').value;
+                const pass = document.getElementById('login-password').value;
+                try {
+                    await signInWithEmailAndPassword(auth, email, pass);
+                    showToast("Sesión iniciada con éxito");
+                } catch (error) {
+                    showToast(error.message, 'error');
+                }
+            });
+
+            // Acción: Registro e Inserción de Nuevo Perfil
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const username = document.getElementById('reg-username').value;
+                const email = document.getElementById('reg-email').value;
+                const pass = document.getElementById('reg-password').value;
+                const passConf = document.getElementById('reg-password-confirm').value;
+
+                if(pass !== passConf) {
+                    showToast("Las contraseñas provistas no coinciden.", 'error');
+                    return;
+                }
+
+                try {
+                    const res = await createUserWithEmailAndPassword(auth, email, pass);
+                    await updateProfile(res.user, { displayName: username });
+                    // Forzar creación en metadatos locales
+                    AppDB.getUserMeta(res.user.uid);
+                    AppDB.updateUserMeta(res.user.uid, { name: username });
+                    showToast("Cuenta desplegada correctamente");
+                } catch (error) {
+                    showToast(error.message, 'error');
+                }
+            });
+
+            // Acción: Login de Invitados (Anónimo)
+            document.getElementById('btn-guest').addEventListener('click', async () => {
+                try {
+                    await signInAnonymously(auth);
+                    showToast("Acceso concedido como Invitado");
+                } catch (error) {
+                    showToast(error.message, 'error');
+                }
+            });
+
+            // Acción: Recuperación de password
+            document.getElementById('btn-recover').addEventListener('click', (e) => {
+                e.preventDefault();
+                showToast("Funcionalidad de recuperación enviada al administrador.", 'success');
+            });
+
+            // Acción: Desconexión de Ecosistema
+            document.getElementById('btn-logout').addEventListener('click', () => {
+                signOut(auth).then(() => {
+                    showToast("Sesión finalizada de manera segura.");
+                });
+            });
+        }
+
+        // OBSERVADOR DE ESTADO EN TIEMPO REAL (FIREBASE AUTH)
+        onAuthStateChanged(auth, (user) => {
+            const authScreen = document.getElementById('auth-screen');
+            const mainDashboard = document.getElementById('main-dashboard');
+            
+            if(user) {
+                currentUser = user;
+                const meta = AppDB.getUserMeta(user.uid);
+
+                // Comprobación de Estado de Bloqueo / Suspensión
+                if(meta.isSuspended && meta.suspensionUntil > Date.now()) {
+                    handleSuspendedState(meta);
+                    signOut(auth);
+                    return;
+                }
+
+                authScreen.classList.add('hidden');
+                mainDashboard.classList.remove('hidden');
+                
+                // Setear interfaz con datos del usuario actual
+                document.getElementById('user-display-name').innerText = user.displayName || (user.isAnonymous ? "Invitado Temporal" : user.email.split('@')[0]);
+                document.getElementById('user-avatar').innerText = (user.displayName ? user.displayName[0] : "U").toUpperCase();
+                document.getElementById('profile-name').value = user.displayName || "";
+                document.getElementById('profile-email').value = user.email || "Anon@emma.ai";
+
+                // Mostrar Panel de Administración si cuenta con los privilegios requeridos
+                const adminNav = document.getElementById('nav-tab-admin');
+                if(meta.isAdmin) {
+                    adminNav.classList.remove('hidden');
+                } else {
+                    adminNav.classList.add('hidden');
+                }
+
+                syncUsageLimits();
+                renderChatContent();
+                refreshAdminDashboard();
+            } else {
+                currentUser = null;
+                authScreen.classList.remove('hidden');
+                mainDashboard.classList.add('hidden');
+            }
+        });
+
+        // MANEJO DE PANTALLA DE EXPULSIÓN/SUSPENSIÓN
+        function handleSuspendedState(meta) {
+            const screen = document.getElementById('suspended-screen');
+            const reason = document.getElementById('suspension-reason');
+            const countdown = document.getElementById('suspension-countdown');
+            
+            reason.innerText = meta.suspensionReason || "Violación de términos generales.";
+            screen.classList.remove('hidden');
+
+            const timer = setInterval(() => {
+                const diff = meta.suspensionUntil - Date.now();
+                if(diff <= 0) {
+                    clearInterval(timer);
+                    screen.classList.add('hidden');
+                } else {
+                    const secs = Math.floor((diff / 1000) % 60);
+                    const mins = Math.floor((diff / 1000 / 60) % 60);
+                    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                    countdown.innerText = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                }
+            }, 1000);
+        }
+
+        // SISTEMA REAL DE CONTROL DE CONTADORES Y LÍMITES DIARIOS
+        function syncUsageLimits() {
+            if(!currentUser) return;
+            const meta = AppDB.getUserMeta(currentUser.uid);
+            const store = AppDB.getStore();
+            document.getElementById('limit-counter').innerText = `${meta.messagesSentToday}/${store.systemStrings.globalLimit}`;
+        }
+
+        // MOTOR CENTRAL DE DIALOGO E INTERFAZ DEL CHAT IA
+        function initChatListeners() {
+            const form = document.getElementById('chat-input-form');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if(!currentUser) return;
+
+                const input = document.getElementById('chat-input');
+                const text = input.value.trim();
+                if(!text) return;
+
+                const meta = AppDB.getUserMeta(currentUser.uid);
+                const store = AppDB.getStore();
+
+                // Validación de Límite Diario en Tiempo Real
+                if(meta.messagesSentToday >= store.systemStrings.globalLimit && !meta.isAdmin) {
+                    showToast("Límite de mensajes alcanzado", 'error');
+                    injectSystemMessage(store.systemStrings.rateLimit);
+                    input.value = "";
+                    return;
+                }
+
+                // Inyectar mensaje de usuario en base de datos local
+                const activeChatId = store.activeChat || "default-chat";
+                if(!store.chats[activeChatId]) {
+                    store.chats[activeChatId] = { id: activeChatId, title: text.substring(0, 24), messages: [] };
+                }
+
+                store.chats[activeChatId].messages.push({ sender: 'user', text: text, timestamp: Date.now() });
+                
+                // Actualizar contadores
+                meta.messagesSentToday += 1;
+                store.totalGlobalMessages += 1;
+                AppDB.updateUserMeta(currentUser.uid, { messagesSentToday: meta.messagesSentToday });
+                AppDB.saveStore(store);
+
+                input.value = "";
+                renderChatContent();
+                syncUsageLimits();
+
+                // Mostrar indicador de escritura
+                const typingIndicator = document.getElementById('typing-indicator');
+                typingIndicator.classList.remove('hidden');
+                typingIndicator.scrollIntoView({ behavior: 'smooth' });
+
+                // Simulación Inteligente de Respuesta Asíncrona basada en el Contexto del Proyecto
+                setTimeout(() => {
+                    typingIndicator.classList.add('hidden');
+                    let responseText = "";
+
+                    if(text.toLowerCase().includes('/reset')) {
+                        responseText = "Server Reset Success: Se ha reiniciado la caché y variables operacionales de Emma AI.";
+                    } else if(text.toLowerCase().includes('hola') || text.toLowerCase().includes('buenos')) {
+                        responseText = store.systemStrings.welcome;
+                    } else {
+                        responseText = `Entendido tu requerimiento sobre "${text}". Procesando información bajo la arquitectura de SGame Froom y enlazando módulos con la API verba.ink activa.`;
+                    }
+
+                    // Guardar respuesta del bot
+                    const nextStore = AppDB.getStore();
+                    nextStore.chats[activeChatId].messages.push({ sender: 'bot', text: responseText, timestamp: Date.now() });
+                    AppDB.saveStore(nextStore);
+                    renderChatContent();
+                }, 1500);
+            });
+        }
+
+        // RENDERIZADO DINÁMICO DE LOS BLOQUES DE TEXTO DEL CHAT
+        function renderChatContent() {
+            const store = AppDB.getStore();
+            const activeChatId = store.activeChat || "default-chat";
+            const box = document.getElementById('chat-messages-box');
+            box.innerHTML = "";
+
+            const activeChat = store.chats[activeChatId];
+            if(!activeChat || activeChat.messages.length === 0) {
+                box.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-center p-6 space-y-4 my-auto">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-brand-purple/20 to-brand-pink/20 text-brand-purple flex items-center justify-center">
+                            <i data-lucide="message-square-plus" class="w-8 h-8"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-slate-700">Consola de Chat Emma AI limpia</h3>
+                            <p class="text-xs text-slate-400 max-w-xs mt-1">Escribe tu primer requerimiento abajo para inicializar las compuertas lógicas de la IA.</p>
+                        </div>
+                    </div>
+                `;
+                lucide.createIcons({attrs: {"data-lucide": true}, nameAttr: "data-lucide", node: box});
+                return;
+            }
+
+            activeChat.messages.forEach(msg => {
+                const div = document.createElement('div');
+                div.className = `flex gap-3 max-w-3xl ${msg.sender === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'}`;
+                
+                const isBot = msg.sender === 'bot';
+                div.innerHTML = `
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${isBot ? 'bg-gradient-to-tr from-brand-purple to-brand-pink text-white shadow-sm' : 'bg-slate-200 text-slate-700'}">
+                        ${isBot ? 'E' : 'U'}
+                    </div>
+                    <div class="p-3.5 rounded-2xl text-sm leading-relaxed shadow-sm ${isBot ? 'bg-white text-slate-800 border border-slate-100' : 'bg-brand-purple text-white'}">
+                        ${msg.text}
+                    </div>
+                `;
+                box.appendChild(div);
+            });
+
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function injectSystemMessage(text) {
+            const box = document.getElementById('chat-messages-box');
+            const div = document.createElement('div');
+            div.className = "flex items-center justify-center p-4";
+            div.innerHTML = `<span class="bg-rose-50 text-rose-600 border border-rose-100 rounded-xl px-4 py-2 text-xs font-medium max-w-md text-center shadow-sm">${text}</span>`;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        // GESTIÓN DE SECCIONES DE CHATS RECIENTES EN EL MENÚ LATERAL
+        window.startNewChat = function() {
+            const store = AppDB.getStore();
+            const id = "chat-" + Date.now();
+            store.chats[id] = { id: id, title: `Chat de consulta #${Object.keys(store.chats).length + 1}`, messages: [] };
+            store.activeChat = id;
+            AppDB.saveStore(store);
+            renderRecentChats();
+            renderChatContent();
+            showToast("Nueva sala inicializada.");
+        };
+
+        window.selectChat = function(id) {
+            const store = AppDB.getStore();
+            store.activeChat = id;
+            AppDB.saveStore(store);
+            renderRecentChats();
+            renderChatContent();
+        };
+
+        window.deleteChat = function(id, e) {
+            e.stopPropagation();
+            const store = AppDB.getStore();
+            delete store.chats[id];
+            if(store.activeChat === id) {
+                const keys = Object.keys(store.chats);
+                store.activeChat = keys.length > 0 ? keys[0] : null;
+            }
+            AppDB.saveStore(store);
+            renderRecentChats();
+            renderChatContent();
+            showToast("Conversación eliminada.");
+        };
+
+        function renderRecentChats() {
+            const store = AppDB.getStore();
+            const container = document.getElementById('recent-chats-list');
+            container.innerHTML = "";
+
+            Object.keys(store.chats).forEach(key => {
+                const chat = store.chats[key];
+                const isActive = store.activeChat === key;
+                const div = document.createElement('div');
+                div.className = `group flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all ${isActive ? 'bg-brand-purple/10 text-brand-purple' : 'text-slate-600 hover:bg-slate-100'}`;
+                div.setAttribute('onclick', `selectChat('${chat.id}')`);
+                div.innerHTML = `
+                    <div class="flex items-center gap-2 truncate">
+                        <i data-lucide="message-square" class="w-3.5 h-3.5 shrink-0"></i>
+                        <span class="truncate">${chat.title}</span>
+                    </div>
+                    <button onclick="deleteChat('${chat.id}', event)" class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 transition-all p-0.5 rounded">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+            lucide.createIcons({attrs: {"data-lucide": true}, nameAttr: "data-lucide", node: container});
+        }
+
+        // CAMBIO DE VISTAS EN EL DASHBOARD (NAVEGACIÓN)
+        window.switchTab = function(tabId) {
+            document.querySelectorAll('main > div > section').forEach(sec => sec.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-gradient-to-r', 'from-brand-purple/10', 'to-brand-pink/10', 'text-brand-purple');
+                btn.classList.add('text-slate-600', 'hover:bg-slate-50');
+            });
+
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if(activeNav) {
+                activeNav.classList.remove('text-slate-600', 'hover:bg-slate-50');
+                activeNav.classList.add('bg-gradient-to-r', 'from-brand-purple/10', 'to-brand-pink/10', 'text-brand-purple');
+            }
+            
+            if(window.innerWidth < 1024) toggleSidebar();
+        };
+
+        // SIDEBAR RESPONSIVO MÓVIL
+        window.toggleSidebar = function() {
+            const sidebar = document.getElementById('sidebar');
+            if(sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+            }
+        };
+
+        // ACCIONES DE PERFIL (MÓDULO CONFIGURACIÓN)
+        window.saveProfileChanges = async function() {
+            const name = document.getElementById('profile-name').value;
+            if(!currentUser) return;
+            try {
+                await updateProfile(auth.currentUser, { displayName: name });
+                AppDB.updateUserMeta(currentUser.uid, { name: name });
+                document.getElementById('user-display-name').innerText = name;
+                showToast("Cambios del perfil consolidados.");
+                refreshAdminDashboard();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        };
+
+        window.resetProfileForm = function() {
+            if(!currentUser) return;
+            document.getElementById('profile-name').value = currentUser.displayName || "";
+            showToast("Formulario restablecido.");
+        };
+
+        // LÓGICA CORE DEL PANEL DE ADMINISTRACIÓN (VINCULACIÓN REAL CON BASE DE DATOS LOCAL)
+        function refreshAdminDashboard() {
+            const store = AppDB.getStore();
+            
+            // Setear inputs Administrativos de Cadenas de Texto
+            document.getElementById('cfg-msg-welcome').value = store.systemStrings.welcome;
+            document.getElementById('cfg-msg-limit').value = store.systemStrings.rateLimit;
+            document.getElementById('cfg-msg-limit-num').value = store.systemStrings.globalLimit;
+            document.getElementById('cfg-msg-error').value = store.systemStrings.error;
+
+            // Setear métricas en tiempo real
+            document.getElementById('stat-users').innerText = Object.keys(store.usersMeta).length;
+            document.getElementById('stat-chats').innerText = store.totalGlobalMessages;
+            document.getElementById('stat-limit').innerText = store.systemStrings.globalLimit;
+
+            // Listar usuarios registrados en la tabla operacional del Administrador
+            const tbody = document.getElementById('admin-users-rows');
+            tbody.innerHTML = "";
+
+            Object.keys(store.usersMeta).forEach(key => {
+                const user = store.usersMeta[key];
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/80 transition-all";
+                tr.innerHTML = `
+                    <td class="py-3 pl-2 font-mono text-[10px] text-slate-500 max-w-[120px] truncate" title="${user.uid}">
+                        ${user.uid.substring(0,8)}... / ${user.isAdmin ? 'Admin' : 'User'}
+                    </td>
+                    <td class="py-3 font-semibold text-slate-700">${user.name}</td>
+                    <td class="py-3 font-medium">${user.messagesSentToday} msg</td>
+                    <td class="py-3 text-right pr-2 space-x-1">
+                        <button onclick="adminToggleSuspension('${user.uid}')" class="px-2 py-1 rounded text-[10px] font-bold ${user.isSuspended ? 'bg-amber-100 text-amber-700' : 'bg-rose-50 text-rose-600 hover:bg-rose-100'}">
+                            ${user.isSuspended ? 'Remover Ban' : 'Suspender'}
+                        </button>
+                        <button onclick="adminResetCounter('${user.uid}')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-[10px] font-bold" title="Reset Límite Diario">
+                            <i data-lucide="rotate-ccw" class="w-3 h-3 inline"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            lucide.createIcons({attrs: {"data-lucide": true}, nameAttr: "data-lucide", node: tbody});
+        }
+
+        window.saveAdminStrings = function() {
+            const store = AppDB.getStore();
+            store.systemStrings.welcome = document.getElementById('cfg-msg-welcome').value;
+            store.systemStrings.rateLimit = document.getElementById('cfg-msg-limit').value;
+            store.systemStrings.globalLimit = parseInt(document.getElementById('cfg-msg-limit-num').value) || 20;
+            store.systemStrings.error = document.getElementById('cfg-msg-error').value;
+
+            AppDB.saveStore(store);
+            showToast("Variables globales actualizadas.");
+            syncUsageLimits();
+            refreshAdminDashboard();
+        };
+
+        window.resetAdminStrings = function() {
+            const store = AppDB.getStore();
+            store.systemStrings = {
+                welcome: "¡Hola! Soy Emma AI. ¿En qué puedo asistirte en tus despliegues hoy?",
+                rateLimit: "Rate Limit Messages: Has alcanzado el límite diario del plan gratuito. Vuelve mañana o mejora tu plan.",
+                error: "AI Response Error: Ocurrió un fallo de sincronización con el núcleo central.",
+                globalLimit: 20
+            };
+            AppDB.saveStore(store);
+            showToast("Configuración restablecida a parámetros de fábrica.");
+            refreshAdminDashboard();
+            syncUsageLimits();
+        };
+
+        window.adminToggleSuspension = function(uid) {
+            const user = AppDB.getUserMeta(uid);
+            if(user.isAdmin) {
+                showToast("No se puede suspender una cuenta con rol Root / Admin.", 'error');
+                return;
+            }
+            const status = !user.isSuspended;
+            AppDB.updateUserMeta(uid, {
+                isSuspended: status,
+                suspensionReason: status ? "Violación flagrante de peticiones concurrentes." : "",
+                suspensionUntil: status ? Date.now() + (60000 * 10) : 0 // 10 Minutos de ban demostrativo ajustable
+            });
+            showToast(status ? "Cuenta bloqueada" : "Bloqueo revocado con éxito");
+            refreshAdminDashboard();
+        };
+
+        window.adminResetCounter = function(uid) {
+            AppDB.updateUserMeta(uid, { messagesSentToday: 0 });
+            showToast("Contador diario de cuota restablecido a 0.");
+            syncUsageLimits();
+            refreshAdminDashboard();
+        };
+
+    </script>
+</body>
+</html>
