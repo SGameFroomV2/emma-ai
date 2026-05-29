@@ -281,17 +281,17 @@
                             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                 <div>
                                     <div class="flex items-center gap-2 text-xs font-mono text-brand-accent tracking-wider mb-1">
-                                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                                        API CONECTADA EXITOSAMENTE
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500" id="api-status-dot"></span>
+                                        <span id="api-status-text">VERIFICANDO CONEXIÓN...</span>
                                     </div>
-                                    <h4 class="text-lg font-bold tracking-tight">api.verba.ink/v1/response</h4>
-                                    <p class="text-xs text-slate-400 mt-1 font-mono">Key: vka_Xo9Vw5h3bPHpN6o_jtnR3-BO6ZC-nNI5</p>
+                                    <h4 class="text-lg font-bold tracking-tight font-mono">api.verba.ink/v1/response</h4>
+                                    <p class="text-xs text-slate-400 mt-1 font-mono">Key: vka_Xo9Vw5h3bP••••••••••••••••</p>
                                 </div>
                                 <div class="grid grid-cols-2 gap-x-6 gap-y-1 font-mono text-[11px] text-slate-300 border-l border-white/10 pl-4">
-                                    <div><strong>Verb ID:</strong> c0ada96b15ce0677a9dddc95</div>
-                                    <div><strong>Model AI:</strong> m_free_a</div>
-                                    <div><strong>Created:</strong> May 28, 2026</div>
-                                    <div><strong>Last Active:</strong> May 29, 2026</div>
+                                    <div><strong>Endpoint:</strong> /v1/response</div>
+                                    <div><strong>Image:</strong> /v1/image</div>
+                                    <div><strong>Lang:</strong> <span id="api-lang-badge">Auto-detect</span></div>
+                                    <div><strong>Status:</strong> <span id="api-http-status" class="text-emerald-400">—</span></div>
                                 </div>
                             </div>
                         </div>
@@ -414,6 +414,48 @@
 
         const VERBA_API_KEY = "vka_Xo9Vw5h3bPHpN6o_jtnR3-BO6ZC-nNI5";
         const VERBA_API_URL = "https://api.verba.ink/v1/response";
+        const VERBA_IMAGE_URL = "https://api.verba.ink/v1/image";
+
+        // ─── LANGUAGE DETECTION ───
+        function detectLanguage(text) {
+            const t = text.toLowerCase();
+            const esPattern = /\b(hola|cómo|como|qué|que|gracias|puedes|puedo|quiero|necesito|ayuda|dime|tengo|está|estoy|hacer|saber|cuál|cuando|donde|porque|pero|también|más|para|crear|escribir|explicar|dame|eres|eso|esto|ese|una|los|las|del|hay|sin|sobre|después|antes|siempre|nunca|ahora|bueno|malo)\b/;
+            const ptPattern = /\b(olá|como|não|sim|obrigado|preciso|quero|pode|fazer|saber|onde|quando|porque|mas|também|muito|bom|criar|escrever|explicar|você|isso|esse|essa|uma|uns|umas|dos|das|pelo|pela|após|antes|sempre|nunca|agora)\b/;
+            if (esPattern.test(t)) return 'es';
+            if (ptPattern.test(t)) return 'pt';
+            return 'en';
+        }
+
+        function buildSystemPrompt(lang) {
+            const prompts = {
+                es: "Eres Emma AI, una asistente inteligente de SGame Froom. Responde siempre en español de forma clara, útil y amigable. Sé conciso pero completo.",
+                en: "You are Emma AI, an intelligent assistant by SGame Froom. Always respond in English, clearly, helpfully and in a friendly manner. Be concise but complete.",
+                pt: "Você é Emma AI, uma assistente inteligente da SGame Froom. Responda sempre em português de forma clara, útil e amigável. Seja conciso mas completo."
+            };
+            return prompts[lang] || prompts['en'];
+        }
+
+        // ─── PING API STATUS ───
+        async function pingApiStatus() {
+            const dot = document.getElementById('api-status-dot');
+            const txt = document.getElementById('api-status-text');
+            const httpEl = document.getElementById('api-http-status');
+            if (!dot) return;
+            try {
+                const r = await fetch(VERBA_API_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${VERBA_API_KEY}` },
+                    body: JSON.stringify({ message: "ping", system: "ping" })
+                });
+                dot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-ping";
+                txt.innerText = "API OPERACIONAL";
+                if (httpEl) { httpEl.innerText = r.status; httpEl.className = "text-emerald-400"; }
+            } catch(e) {
+                dot.className = "w-2 h-2 rounded-full bg-red-500";
+                txt.innerText = "ERROR DE CONEXIÓN";
+                if (httpEl) { httpEl.innerText = "ERR"; httpEl.className = "text-red-400"; }
+            }
+        }
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -725,15 +767,25 @@
                 typingInd.classList.add('flex');
                 typingInd.scrollIntoView({ behavior: 'smooth' });
 
-                // ─── REAL VERBA.INK API CALL ───
+                // ─── VERBA.INK API CALL (REAL) ───
                 try {
+                    const lang = detectLanguage(text);
+                    const systemPrompt = buildSystemPrompt(lang);
+
+                    // Update lang badge in admin if visible
+                    const langBadge = document.getElementById('api-lang-badge');
+                    if (langBadge) langBadge.innerText = lang.toUpperCase();
+
                     const response = await fetch(VERBA_API_URL, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
                             "Authorization": `Bearer ${VERBA_API_KEY}`
                         },
-                        body: JSON.stringify({ message: text })
+                        body: JSON.stringify({
+                            message: text,
+                            system: systemPrompt
+                        })
                     });
 
                     typingInd.classList.add('hidden');
@@ -741,10 +793,24 @@
 
                     let botText = "";
                     if (response.ok) {
-                        const data = await response.json();
-                        // verba.ink returns response in different fields - try common ones
-                        botText = data.response || data.text || data.message || data.reply || data.content || JSON.stringify(data);
+                        const raw = await response.text();
+                        try {
+                            const data = JSON.parse(raw);
+                            // Try every possible field verba.ink may return
+                            botText = data.response ?? data.text ?? data.message ?? data.reply ??
+                                      data.content ?? data.output ?? data.answer ?? data.result ??
+                                      (typeof data === 'string' ? data : JSON.stringify(data));
+                        } catch {
+                            botText = raw; // plain text response
+                        }
                     } else {
+                        let errBody = "";
+                        try { const d = await response.json(); errBody = d.error || d.message || ""; } catch {}
+                        const fresh = await fsGetSystemStrings();
+                        botText = fresh.error + (errBody ? ` (${errBody})` : ` — HTTP ${response.status}`);
+                    }
+
+                    if (!botText || botText.trim() === "") {
                         const fresh = await fsGetSystemStrings();
                         botText = fresh.error;
                     }
@@ -755,7 +821,7 @@
                     typingInd.classList.add('hidden');
                     typingInd.classList.remove('flex');
                     const fresh = await fsGetSystemStrings();
-                    await fsAddMessage(currentUser.uid, activeChatId, { sender: 'bot', text: fresh.error + " (" + err.message + ")" });
+                    await fsAddMessage(currentUser.uid, activeChatId, { sender: 'bot', text: `${fresh.error} — ${err.message}` });
                 }
             });
         }
@@ -926,6 +992,7 @@
 
         // ─── ADMIN ───
         async function refreshAdminDashboard() {
+            pingApiStatus();
             const sysStr = await fsGetSystemStrings();
             document.getElementById('cfg-msg-welcome').value = sysStr.welcome || "";
             document.getElementById('cfg-msg-limit').value = sysStr.rateLimit || "";
